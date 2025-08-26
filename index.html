@@ -7,57 +7,44 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #1a1a1a;
-      color: #fff;
       margin: 0;
       padding: 20px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
+      background-color: #f0f0f0;
+      color: #333;
+      font-size: 16px;
+      line-height: 1.5;
     }
     .container {
       max-width: 600px;
-      width: 100%;
-      background-color: #2a2a2a;
+      margin: 0 auto;
+      background: white;
       padding: 20px;
       border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
     .stats {
       display: flex;
       justify-content: space-between;
       margin-bottom: 20px;
-    }
-    .stats div {
-      background-color: #3a3a3a;
-      padding: 10px;
-      border-radius: 5px;
-      flex: 1;
-      margin: 0 5px;
-      text-align: center;
+      font-weight: bold;
     }
     .story {
-      background-color: #333;
-      padding: 15px;
-      border-radius: 5px;
       margin-bottom: 20px;
-      line-height: 1.6;
     }
     .choices button {
       display: block;
       width: 100%;
       padding: 10px;
       margin: 10px 0;
-      background-color: #4a4a4a;
-      color: #fff;
+      background: #4CAF50;
+      color: white;
       border: none;
       border-radius: 5px;
       cursor: pointer;
       font-size: 16px;
     }
     .choices button:hover {
-      background-color: #5a5a5a;
+      background: #45a049;
     }
     .controls {
       display: flex;
@@ -66,276 +53,262 @@
     }
     .controls button {
       padding: 10px 20px;
-      background-color: #4a4a4a;
-      color: #fff;
+      background: #2196F3;
+      color: white;
       border: none;
       border-radius: 5px;
       cursor: pointer;
     }
     .controls button:hover {
-      background-color: #5a5a5a;
+      background: #1e88e5;
     }
-    .footer {
-      margin-top: 20px;
-      font-size: 12px;
-      color: #aaa;
+    .hint {
+      display: none;
+      background: #ffeb3b;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 5px;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>수상한 동아리 — 인터랙티브 스토리</h1>
     <div class="stats">
-      <div>플레이: <span id="playtime">0초</span></div>
-      <div>진행: <span id="progress">0%</span></div>
+      <span>플레이: <span id="playtime">0초</span></span>
+      <span>진행: <span id="progress">0%</span></span>
     </div>
     <div class="stats">
-      <div>신뢰도: <span id="trust">0</span></div>
-      <div>단서: <span id="clues">0</span></div>
-      <div>감시레벨: <span id="surveillance">0</span></div>
+      <span>신뢰도: <span id="trust">0</span></span>
+      <span>단서: <span id="clues">0</span></span>
+      <span>감시레벨: <span id="surveillance">0</span></span>
     </div>
-    <div class="story" id="story-text">
+    <div class="story" id="story">
       청화고의 신입생인 당신은 학교에서 가장 수상한 동아리, '비밀 연구회'에 대해 듣게 되었습니다. 소문에 따르면 이 동아리는 이상한 실험을 하고, 심지어 금지된 활동에 연루되어 있다고 합니다. 호기심에 이끌린 당신은 동아리의 비밀을 파헤치기로 결심합니다. 첫 번째 단서를 찾기 위해, 동아리 방으로 몰래 잠입하거나, 동아리 회원 중 한 명인 민서에게 접근할 수 있습니다. 어떻게 하시겠습니까?
     </div>
-    <div class="choices" id="choices"></div>
+    <div class="choices" id="choices">
+      <button onclick="makeChoice('sneak')">동아리 방으로 몰래 잠입한다</button>
+      <button onclick="makeChoice('approach')">민서에게 접근한다</button>
+    </div>
+    <div class="hint" id="hint">힌트: 선택에 따라 신뢰도와 감시레벨이 변동될 수 있습니다. 신뢰도가 높으면 동아리 회원들이 당신을 더 믿지만, 감시레벨이 높아지면 동아리가 당신을 의심합니다.</div>
     <div class="controls">
-      <button onclick="restartGame()">처음부터</button>
-      <button onclick="showHint()">힌트</button>
+      <button onclick="resetGame()">처음부터</button>
+      <button onclick="toggleHint()">힌트</button>
       <button onclick="downloadHTML()">HTML 다운로드</button>
     </div>
-    <div class="footer">
-      오프라인 실행 가능 — 새로고침 시 초기화됩니다.<br>
-      버전: 수상한 동아리 v2.0
-    </div>
+    <div>오프라인 실행 가능 — 새로고침 시 초기화됩니다.</div>
+    <div>버전: 수상한 동아리 v2.1</div>
   </div>
 
   <script>
     let state = {
+      playtime: 0,
+      progress: 0,
       trust: 0,
       clues: 0,
       surveillance: 0,
-      progress: 0,
-      playtime: 0,
-      currentScene: 'start',
-      inventory: [],
-      choicesMade: []
+      currentScene: 'start'
     };
 
     const scenes = {
       start: {
         text: "청화고의 신입생인 당신은 학교에서 가장 수상한 동아리, '비밀 연구회'에 대해 듣게 되었습니다. 소문에 따르면 이 동아리는 이상한 실험을 하고, 심지어 금지된 활동에 연루되어 있다고 합니다. 호기심에 이끌린 당신은 동아리의 비밀을 파헤치기로 결심합니다. 첫 번째 단서를 찾기 위해, 동아리 방으로 몰래 잠입하거나, 동아리 회원 중 한 명인 민서에게 접근할 수 있습니다. 어떻게 하시겠습니까?",
         choices: [
-          { text: "동아리 방으로 몰래 잠입한다", nextScene: 'sneak', effects: { surveillance: 10 } },
-          { text: "민서에게 접근해 정보를 알아본다", nextScene: 'talkMinseo', effects: { trust: 5 } }
+          { text: "동아리 방으로 몰래 잠입한다", next: "sneak", action: () => { state.surveillance += 20; state.clues += 1; state.progress += 20; } },
+          { text: "민서에게 접근한다", next: "approach", action: () => { state.trust += 10; state.progress += 10; } }
         ]
       },
       sneak: {
-        text: "당신은 밤늦게 동아리 방으로 몰래 들어갑니다. 문은 잠겨 있지 않았지만, 내부는 어둡고 이상한 기계 소리가 들립니다. 책상에 놓인 노트와 이상한 기계 장치를 발견했습니다. 무엇을 조사하시겠습니까?",
+        text: "당신은 밤늦게 동아리 방으로 몰래 들어갑니다. 문은 잠겨 있지 않았지만, 내부는 어둡고 이상한 기계 소리가 들립니다. 책상에 놓인 노트북과 서류 더미를 발견했습니다. 노트북을 해킹하거나 서류를 살펴볼까요?",
         choices: [
-          { text: "노트를 살펴본다", nextScene: 'notebook', effects: { clues: 1, surveillance: 5 } },
-          { text: "기계 장치를 조사한다", nextScene: 'device', effects: { surveillance: 15 } },
-          { text: "서둘러 빠져나간다", nextScene: 'start', effects: { surveillance: -5 } }
+          { text: "노트북을 해킹한다", next: "hack", action: () => { state.surveillance += 30; state.clues += 2; state.progress += 20; } },
+          { text: "서류를 살펴본다", next: "documents", action: () => { state.surveillance += 10; state.clues += 1; state.progress += 15; } }
         ]
       },
-      talkMinseo: {
-        text: "민서는 카페에서 책을 읽고 있습니다. 당신이 다가가자 그녀는 경계하는 눈초리로 당신을 바라봅니다. '무슨 용건이야?' 그녀가 묻습니다. 어떻게 대응하시겠습니까?",
+      approach: {
+        text: "민서를 도서관에서 만났습니다. 그는 긴장한 듯 보이지만, 당신과 이야기를 나누는 데 관심이 있어 보입니다. 민서에게 동아리의 활동에 대해 직접 물어보거나, 그의 신뢰를 얻기 위해 일상적인 대화를 나눌까요?",
         choices: [
-          { text: "솔직하게 동아리의 비밀을 묻는다", nextScene: 'honest', effects: { trust: 10, surveillance: 5 } },
-          { text: "가볍게 대화를 나눠 친해진다", nextScene: 'friendly', effects: { trust: 15 } },
-          { text: "모른 척하고 자리를 뜬다", nextScene: 'start', effects: {} }
+          { text: "동아리 활동에 대해 묻는다", next: "ask", action: () => { state.trust -= 10; state.surveillance += 10; state.clues += 1; state.progress += 15; } },
+          { text: "일상적인 대화를 나눈다", next: "chat", action: () => { state.trust += 20; state.progress += 10; } }
         ]
       },
-      notebook: {
-        text: "노트에는 이상한 도표와 암호화된 메모가 적혀 있습니다. '프로젝트 X'라는 단어가 눈에 띕니다. 갑자기 복도에서 발소리가 들립니다! 어떻게 하시겠습니까?",
+      hack: {
+        text: "노트북을 해킹했지만, 보안 시스템이 작동해 동아리 회원들에게 경고가 전송되었습니다. 다행히 암호화된 파일을 하나 얻었습니다. 파일에는 이상한 화학 실험 데이터가 포함되어 있습니다. 이 데이터를 분석하거나, 즉시 동아리 방을 떠날까요?",
         choices: [
-          { text: "노트를 챙겨 도망친다", nextScene: 'escapeWithNotebook', effects: { clues: 1, surveillance: 20, inventory: ['notebook'] } },
-          { text: "숨는다", nextScene: 'hide', effects: { surveillance: 10 } }
+          { text: "데이터를 분석한다", next: "analyze", action: () => { state.surveillance += 20; state.clues += 2; state.progress += 20; } },
+          { text: "동아리 방을 떠난다", next: "escape", action: () => { state.surveillance -= 10; state.progress += 10; } }
         ]
       },
-      device: {
-        text: "기계 장치는 복잡한 버튼과 화면으로 이루어져 있습니다. 실수로 버튼을 누르자 기계가 작동하며 큰 소리를 냅니다! 누군가 다가오고 있습니다. 어떻게 하시겠습니까?",
+      documents: {
+        text: "서류를 살펴보니, 동아리가 금지된 화학 물질을 사용하고 있다는 증거를 발견했습니다. 하지만 누군가 문을 여는 소리가 들립니다! 서류를 복사하거나, 숨을까요?",
         choices: [
-          { text: "기계를 끄려 시도한다", nextScene: 'deviceOff', effects: { surveillance: 30 } },
-          { text: "즉시 도망친다", nextScene: 'start', effects: { surveillance: 10 } }
+          { text: "서류를 복사한다", next: "copy", action: () => { state.surveillance += 20; state.clues += 2; state.progress += 20; } },
+          { text: "숨는다", next: "hide", action: () => { state.surveillance -= 10; state.progress += 10; } }
         ]
       },
-      honest: {
-        text: "민서는 당신의 솔직함에 약간 놀란 듯합니다. '너도 그 동아리에 관심 있는 거야? 위험할 수도 있어.' 그녀는 망설이다가 당신에게 동아리 모임에 초대할지 고민 중이라고 말합니다. 어떻게 하시겠습니까?",
+      ask: {
+        text: "민서는 당신의 질문에 당황하며 대답을 피합니다. 그는 동아리의 활동이 '그저 과학 프로젝트'라고 주장하지만, 그의 눈빛은 다른 이야기를 합니다. 그를 더 압박하거나, 화제를 바꿀까요?",
         choices: [
-          { text: "초대를 받아들인다", nextScene: 'joinClub', effects: { trust: 20, clues: 1 } },
-          { text: "더 캐묻는다", nextScene: 'probe', effects: { trust: -5, surveillance: 10 } }
+          { text: "그를 더 압박한다", next: "pressure", action: () => { state.trust -= 20; state.surveillance += 20; state.clues += 1; state.progress += 15; } },
+          { text: "화제를 바꾼다", next: "chat", action: () => { state.trust += 10; state.progress += 10; } }
         ]
       },
-      friendly: {
-        text: "민서와 가벼운 대화를 나누며 분위기가 부드러워집니다. 그녀는 동아리의 일부 활동이 '특별한 프로젝트'와 관련 있다고 슬쩍 언급합니다. 더 알아보려면 어떻게 하시겠습니까?",
+      chat: {
+        text: "민서와 가벼운 대화를 나누며 그의 신뢰를 얻었습니다. 그는 동아리 방에서 열리는 '특별한 모임'에 당신을 초대합니다. 초대를 받아들이거나, 거절하고 다른 단서를 찾아볼까요?",
         choices: [
-          { text: "프로젝트에 대해 물어본다", nextScene: 'probe', effects: { trust: 5, clues: 1 } },
-          { text: "동아리 모임에 초대해 달라고 부탁한다", nextScene: 'joinClub', effects: { trust: 15 } }
+          { text: "초대를 받아들인다", next: "meeting", action: () => { state.trust += 20; state.progress += 20; } },
+          { text: "거절하고 다른 단서를 찾는다", next: "investigate", action: () => { state.clues += 1; state.progress += 15; } }
         ]
       },
-      escapeWithNotebook: {
-        text: "노트를 챙겨 동아리 방을 빠져나왔습니다. 노트에는 '프로젝트 X'가 학교의 비밀 지하실과 관련 있다는 단서가 있습니다. 이제 어디로 가시겠습니까?",
+      analyze: {
+        text: "데이터를 분석한 결과, 동아리가 금지된 물질로 비밀리에 실험을 하고 있다는 증거를 확보했습니다. 하지만 감시레벨이 높아져 동아리가 당신을 의심하기 시작했습니다. 증거를 교사에게 제출하거나, 민서에게 이 사실을 알릴까요?",
         choices: [
-          { text: "지하실로 향한다", nextScene: 'basement', effects: { surveillance: 20, progress: 20 } },
-          { text: "민서에게 노트에 대해 물어본다", nextScene: 'showMinseo', effects: { trust: 10 } }
+          { text: "증거를 교사에게 제출한다", next: "report", action: () => { state.surveillance += 30; state.progress += 30; } },
+          { text: "민서에게 알린다", next: "confront", action: () => { state.trust += 10; state.clues += 1; state.progress += 20; } }
+        ]
+      },
+      escape: {
+        text: "당신은 동아리 방을 무사히 빠져나왔지만, 단서를 더 얻지 못했습니다. 이제 민서에게 접근하거나, 다른 단서를 찾아볼까요?",
+        choices: [
+          { text: "민서에게 접근한다", next: "approach", action: () => { state.trust += 10; state.progress += 10; } },
+          { text: "다른 단서를 찾는다", next: "investigate", action: () => { state.clues += 1; state.progress += 15; } }
+        ]
+      },
+      copy: {
+        text: "서류를 복사했지만, 동아리 회원이 방에 들어왔습니다. 당신은 간신히 들키지 않았지만, 감시레벨이 올라갔습니다. 복사한 서류를 분석하거나, 즉시 떠날까요?",
+        choices: [
+          { text: "서류를 분석한다", next: "analyze", action: () => { state.surveillance += 20; state.clues += 2; state.progress += 20; } },
+          { text: "즉시 떠난다", next: "escape", action: () => { state.surveillance -= 10; state.progress += 10; } }
         ]
       },
       hide: {
-        text: "당신은 책장 뒤에 숨었습니다. 누군가 방에 들어와 잠시 둘러보더니 나갑니다. 안전해진 것 같습니다. 이제 어떻게 하시겠습니까?",
+        text: "당신은 책상 밑에 숨었고, 동아리 회원은 아무것도 눈치채지 못했습니다. 하지만 단서를 더 얻지 못했습니다. 이제 민서에게 접근하거나, 다른 단서를 찾아볼까요?",
         choices: [
-          { text: "노트를 챙긴다", nextScene: 'escapeWithNotebook', effects: { clues: 1, inventory: ['notebook'] } },
-          { text: "기계 장치를 조사한다", nextScene: 'device', effects: { surveillance: 10 } }
+          { text: "민서에게 접근한다", next: "approach", action: () => { state.trust += 10; state.progress += 10; } },
+          { text: "다른 단서를 찾는다", next: "investigate", action: () => { state.clues += 1; state.progress += 15; } }
         ]
       },
-      deviceOff: {
-        text: "기계를 끄려 했지만, 경보음이 울리며 감시레벨이 급격히 상승했습니다! 동아리 회원들이 당신을 발견했습니다. 게임 오버!",
+      pressure: {
+        text: "민서를 압박하자 그는 화를 내며 자리를 떠났습니다. 당신의 신뢰도가 떨어졌지만, 그의 주머니에서 떨어진 메모를 주웠습니다. 메모에는 '실험실 열쇠'라는 단어가 적혀 있습니다. 실험실로 가거나, 다른 단서를 찾아볼까요?",
         choices: [
-          { text: "다시 시작", nextScene: 'start', effects: { trust: 0, clues: 0, surveillance: 0, progress: 0, inventory: [] } }
+          { text: "실험실로 간다", next: "lab", action: () => { state.surveillance += 20; state.clues += 2; state.progress += 20; } },
+          { text: "다른 단서를 찾는다", next: "investigate", action: () => { state.clues += 1; state.progress += 15; } }
         ]
       },
-      joinClub: {
-        text: "민서의 초대로 동아리 모임에 참석했습니다. 동아리 회원들은 당신을 환영하지만, 뭔가 숨기는 분위기가 느껴집니다. '프로젝트 X'에 대해 알아보려면 어떻게 하시겠습니까?",
+      meeting: {
+        text: "모임에 참석한 당신은 동아리 회원들이 이상한 화학 실험을 논의하는 것을 엿듣습니다. 그들은 금지된 물질을 사용하고 있으며, 이를 숨기기 위해 노력하고 있습니다. 이 정보를 교사에게 보고하거나, 민서에게 대질할까요?",
         choices: [
-          { text: "회원들과 대화하며 정보를 수집한다", nextScene: 'talkClub', effects: { trust: 10, clues: 1 } },
-          { text: "비밀리에 동아리 방을 조사한다", nextScene: 'sneak', effects: { surveillance: 15 } }
+          { text: "교사에게 보고한다", next: "report", action: () => { state.surveillance += 30; state.progress += 30; } },
+          { text: "민서에게 대질한다", next: "confront", action: () => { state.trust += 10; state.clues += 1; state.progress += 20; } }
         ]
       },
-      probe: {
-        text: "민서는 당신의 질문에 불편한 기색을 보이며 대화를 피합니다. '너무 깊이 파고들지 마.' 그녀가 경고합니다. 이제 어떻게 하시겠습니까?",
+      investigate: {
+        text: "학교 곳곳을 조사하며 동아리의 비밀에 대한 소문을 더 듣게 되었습니다. 한 학생이 동아리가 학교 지하실에서 비밀 실험을 하고 있다고 귀띔해줍니다. 지하실로 가거나, 민서에게 다시 접근할까요?",
         choices: [
-          { text: "사과하고 다시 친해지려 한다", nextScene: 'friendly', effects: { trust: 5 } },
-          { text: "동아리 방으로 몰래 들어간다", nextScene: 'sneak', effects: { surveillance: 10 } }
+          { text: "지하실로 간다", next: "lab", action: () => { state.surveillance += 20; state.clues += 2; state.progress += 20; } },
+          { text: "민서에게 접근한다", next: "approach", action: () => { state.trust += 10; state.progress += 10; } }
         ]
       },
-      basement: {
-        text: "학교 지하실에 도착했습니다. 어두운 복도 끝에 잠긴 문이 있습니다. 노트에 적힌 암호를 사용해 문을 열 수 있을 것 같습니다. 암호를 입력하시겠습니까?",
+      lab: {
+        text: "지하실 실험실에 도착한 당신은 금지된 화학 물질과 이상한 장비들을 발견했습니다. 하지만 보안 카메라가 당신을 찍고 있는 것 같습니다. 증거를 사진으로 찍거나, 즉시 떠날까요?",
         choices: [
-          { text: "암호를 입력한다", nextScene: 'ending', effects: { progress: 50, clues: 1 } },
-          { text: "다른 단서를 찾아본다", nextScene: 'sneak', effects: { surveillance: 10 } }
+          { text: "증거를 사진으로 찍는다", next: "photo", action: () => { state.surveillance += 30; state.clues += 3; state.progress += 30; } },
+          { text: "즉시 떠난다", next: "escape", action: () => { state.surveillance -= 10; state.progress += 10; } }
         ]
       },
-      showMinseo: {
-        text: "민서에게 노트를 보여주자 그녀는 놀라며 당신에게 모든 것을 털어놓습니다. '프로젝트 X'는 학교의 비밀 지하실에서 진행되는 실험이라고 합니다. 그녀는 당신을 지하실로 안내하겠다고 제안합니다. 따라가시겠습니까?",
+      photo: {
+        text: "증거를 사진으로 찍었지만, 동아리 회원들이 당신을 발견했습니다! 그들은 당신을 추궁하며 증거를 넘기라고 요구합니다. 증거를 넘기거나, 도망칠까요?",
         choices: [
-          { text: "민서를 따라간다", nextScene: 'ending', effects: { trust: 20, progress: 50 } },
-          { text: "혼자 지하실로 간다", nextScene: 'basement', effects: { surveillance: 15 } }
+          { text: "증거를 넘긴다", next: "surrender", action: () => { state.trust -= 20; state.clues -= 2; state.progress += 10; } },
+          { text: "도망친다", next: "flee", action: () => { state.surveillance += 20; state.progress += 20; } }
         ]
       },
-      talkClub: {
-        text: "회원들과 대화하며 '프로젝트 X'가 학교의 비밀 지하실과 관련 있다는 정보를 얻었습니다. 하지만 누군가 당신을 의심스럽게 쳐다봅니다. 감시레벨이 올라갔습니다. 다음은 어떻게 하시겠습니까?",
+      surrender: {
+        text: "증거를 넘겼지만, 동아리는 당신을 믿지 않고 감시를 강화합니다. 이제 어떻게 할까요?",
         choices: [
-          { text: "지하실로 향한다", nextScene: 'basement', effects: { surveillance: 20, progress: 20 } },
-          { text: "민서에게 도움을 요청한다", nextScene: 'showMinseo', effects: { trust: 10 } }
+          { text: "교사에게 도움을 요청한다", next: "report", action: () => { state.surveillance += 20; state.progress += 20; } },
+          { text: "민서에게 사과하고 도움을 청한다", next: "confront", action: () => { state.trust += 10; state.progress += 15; } }
         ]
       },
-      ending: {
-        text: "지하실 문을 열고 들어가자, 당신은 '프로젝트 X'의 전모를 알게 되었습니다. 동아리는 금지된 과학 실험을 통해 학교의 비밀을 파헤치고 있었습니다. 당신의 선택에 따라 진실을 세상에 알리거나, 동아리와 함께 비밀을 지킬 수 있습니다. 게임 클리어! 최종 신뢰도: <span id='finalTrust'></span>, 단서: <span id='finalClues'></span>, 감시레벨: <span id='finalSurveillance'></span>",
+      flee: {
+        text: "당신은 간신히 도망쳤지만, 동아리는 당신을 의심하고 있습니다. 증거를 교사에게 제출하거나, 민서에게 도움을 요청할까요?",
         choices: [
-          { text: "진실을 공개한다", nextScene: 'expose', effects: { progress: 100 } },
-          { text: "비밀을 지킨다", nextScene: 'keepSecret', effects: { trust: 30, progress: 100 } }
+          { text: "증거를 교사에게 제출한다", next: "report", action: () => { state.surveillance += 30; state.progress += 30; } },
+          { text: "민서에게 도움을 요청한다", next: "confront", action: () => { state.trust += 10; state.clues += 1; state.progress += 20; } }
         ]
       },
-      expose: {
-        text: "당신은 '프로젝트 X'의 진실을 세상에 공개했습니다. 학교는 큰 혼란에 빠졌지만, 당신은 정의를 위해 싸웠다는 자부심을 느낍니다. 엔딩: 정의의 사자. 다시 플레이하시겠습니까?",
+      confront: {
+        text: "민서에게 모든 것을 털어놓자, 그는 동아리의 실험을 막으려는 비밀 단체의 일원이라고 고백합니다. 당신은 그의 동료가 되어 동아리를 막거나, 교사에게 모든 것을 보고할 수 있습니다.",
         choices: [
-          { text: "다시 시작", nextScene: 'start', effects: { trust: 0, clues: 0, surveillance: 0, progress: 0, inventory: [] } }
+          { text: "민서와 함께 동아리를 막는다", next: "teamup", action: () => { state.trust += 30; state.progress += 30; } },
+          { text: "교사에게 보고한다", next: "report", action: () => { state.surveillance += 30; state.progress += 30; } }
         ]
       },
-      keepSecret: {
-        text: "당신은 동아리와 함께 비밀을 지키기로 했습니다. '프로젝트 X'는 계속되며, 당신은 이제 동아리의 일원이 되었습니다. 엔딩: 비밀의 수호자. 다시 플레이하시겠습니까?",
-        choices: [
-          { text: "다시 시작", nextScene: 'start', effects: { trust: 0, clues: 0, surveillance: 0, progress: 0, inventory: [] } }
-        ]
+      teamup: {
+        text: "민서와 함께 동아리의 실험을 막기 위해 계획을 세웠습니다. 당신의 노력으로 동아리의 불법 활동이 드러났고, 학교는 이를 조사하기 시작했습니다. 당신은 영웅이 되었습니다! [엔딩: 동아리 해체]",
+        choices: [],
+        ending: true
+      },
+      report: {
+        text: "교사에게 증거를 제출하자, 동아리의 불법 활동이 밝혀졌습니다. 하지만 민서는 당신이 자신을 배신했다고 생각해 등을 돌렸습니다. 동아리는 해체되었지만, 당신은 친구를 잃었습니다. [엔딩: 고독한 승리]",
+        choices: [],
+        ending: true
       }
     };
 
-    let timer;
-
-    function startGame() {
-      timer = setInterval(() => {
-        state.playtime++;
-        document.getElementById('playtime').textContent = `${state.playtime}초`;
-      }, 1000);
-      renderScene();
-    }
-
-    function renderScene() {
-      const scene = scenes[state.currentScene];
-      document.getElementById('story-text').innerHTML = scene.text;
+    function updateUI() {
+      document.getElementById('playtime').textContent = `${state.playtime}초`;
+      document.getElementById('progress').textContent = `${state.progress}%`;
       document.getElementById('trust').textContent = state.trust;
       document.getElementById('clues').textContent = state.clues;
       document.getElementById('surveillance').textContent = state.surveillance;
-      document.getElementById('progress').textContent = `${state.progress}%`;
-
-      if (state.currentScene === 'ending') {
-        document.getElementById('finalTrust').textContent = state.trust;
-        document.getElementById('finalClues').textContent = state.clues;
-        document.getElementById('finalSurveillance').textContent = state.surveillance;
-      }
+      document.getElementById('story').textContent = scenes[state.currentScene].text;
 
       const choicesDiv = document.getElementById('choices');
       choicesDiv.innerHTML = '';
-      scene.choices.forEach((choice, index) => {
-        const button = document.createElement('button');
-        button.textContent = choice.text;
-        button.onclick = () => makeChoice(choice);
-        choicesDiv.appendChild(button);
-      });
+      if (scenes[state.currentScene].ending) {
+        choicesDiv.innerHTML = '<p>게임 종료! 다시 시작하려면 "처음부터" 버튼을 누르세요.</p>';
+      } else {
+        scenes[state.currentScene].choices.forEach(choice => {
+          const button = document.createElement('button');
+          button.textContent = choice.text;
+          button.onclick = () => makeChoice(choice.next);
+          choicesDiv.appendChild(button);
+        });
+      }
 
-      if (state.surveillance >= 100) {
-        state.currentScene = 'deviceOff';
-        renderScene();
+      if (state.surveillance >= 80) {
+        document.getElementById('story').textContent = "동아리가 당신을 완전히 의심하게 되었습니다. 그들은 당신을 쫓아내고 모든 증거를 숨겼습니다. [엔딩: 실패]";
+        choicesDiv.innerHTML = '<p>게임 종료! 다시 시작하려면 "처음부터" 버튼을 누르세요.</p>';
       }
     }
 
-    function makeChoice(choice) {
-      state.currentScene = choice.nextScene;
-      if (choice.effects.trust) state.trust = Math.max(0, state.trust + choice.effects.trust);
-      if (choice.effects.clues) state.clues += choice.effects.clues;
-      if (choice.effects.surveillance) state.surveillance = Math.max(0, state.surveillance + choice.effects.surveillance);
-      if (choice.effects.progress) state.progress = Math.min(100, state.progress + choice.effects.progress);
-      if (choice.effects.inventory) state.inventory.push(...choice.effects.inventory);
-      state.choicesMade.push(choice.text);
-      renderScene();
+    function makeChoice(nextScene) {
+      const scene = scenes[state.currentScene];
+      const choice = scene.choices.find(c => c.next === nextScene);
+      if (choice && choice.action) choice.action();
+      state.currentScene = nextScene;
+      state.progress = Math.min(state.progress, 100);
+      state.trust = Math.max(0, state.trust);
+      state.clues = Math.max(0, state.clues);
+      state.surveillance = Math.max(0, state.surveillance);
+      updateUI();
     }
 
-    function restartGame() {
+    function resetGame() {
       state = {
+        playtime: 0,
+        progress: 0,
         trust: 0,
         clues: 0,
         surveillance: 0,
-        progress: 0,
-        playtime: 0,
-        currentScene: 'start',
-        inventory: [],
-        choicesMade: []
+        currentScene: 'start'
       };
-      clearInterval(timer);
-      startGame();
+      updateUI();
     }
 
-    function showHint() {
-      const hints = {
-        start: "선택에 따라 신뢰도와 감시레벨이 변동됩니다. 신뢰도가 높으면 동아리 회원들의 협조를 얻기 쉬우나, 감시레벨이 높아지면 위험해질 수 있습니다.",
-        sneak: "동아리 방에서 단서를 찾을 수 있지만, 너무 오래 머무르면 들킬 가능성이 높아집니다.",
-        talkMinseo: "민서와의 대화는 신뢰도를 높이는 좋은 방법이지만, 너무 직설적으로 묻는 것은 역효과를 낼 수 있습니다.",
-        notebook: "노트는 중요한 단서를 제공하지만, 들키면 감시레벨이 크게 오릅니다.",
-        device: "기계 장치는 위험한 선택입니다. 조심하세요!",
-        honest: "솔직함은 민서의 신뢰를 얻을 수 있지만, 동아리의 의심을 살 수도 있습니다.",
-        friendly: "친근한 접근은 안전하지만, 정보를 얻는 데 시간이 더 걸릴 수 있습니다.",
-        escapeWithNotebook: "노트를 챙겼다면, 지하실로 가는 것이 다음 단계일 수 있습니다.",
-        hide: "숨는 것은 안전하지만, 기회를 놓칠 수도 있습니다.",
-        deviceOff: "게임 오버! 감시레벨을 너무 높이지 않도록 주의하세요.",
-        joinClub: "동아리에 가입하면 더 많은 정보를 얻을 수 있지만, 감시당할 가능성도 높아집니다.",
-        probe: "너무 집요하게 캐묻는 것은 신뢰도를 떨어뜨릴 수 있습니다.",
-        basement: "지하실은 진실에 가까워지는 장소입니다. 암호를 잘 기억하세요.",
-        showMinseo: "민서에게 노트를 보여주는 것은 신뢰를 크게 높일 수 있는 기회입니다.",
-        talkClub: "회원들과의 대화는 단서를 얻는 데 유용하지만, 의심을 사지 않도록 주의하세요.",
-        ending: "최종 선택이 당신의 엔딩을 결정합니다. 신뢰도와 단서가 결과에 영향을 미칩니다.",
-        expose: "진실을 공개하면 정의로운 엔딩을 얻을 수 있습니다.",
-        keepSecret: "비밀을 지키면 동아리의 일원이 될 수 있습니다."
-      };
-      alert(hints[state.currentScene] || "현재 상황에 대한 힌트가 없습니다.");
+    function toggleHint() {
+      const hint = document.getElementById('hint');
+      hint.style.display = hint.style.display === 'none' ? 'block' : 'none';
     }
 
     function downloadHTML() {
@@ -348,7 +321,12 @@
       document.body.removeChild(element);
     }
 
-    window.onload = startGame;
+    setInterval(() => {
+      state.playtime++;
+      document.getElementById('playtime').textContent = `${state.playtime}초`;
+    }, 1000);
+
+    updateUI();
   </script>
 </body>
 </html>
